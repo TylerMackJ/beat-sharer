@@ -1,5 +1,6 @@
 use std::fs;
 use std::{thread, time};
+use std::io::{stdin, stdout, Read, Write};
 
 trait StringUtils {
     fn substring(&self, start: usize, len: usize) -> Self;
@@ -11,18 +12,47 @@ impl StringUtils for String {
     }
 }
 
+fn pause() {
+    let mut stdout = stdout();
+    stdout.write(b"Press Enter to continue...").unwrap();
+    stdout.flush().unwrap();
+    stdin().read(&mut [0]).unwrap();
+}
+
 fn main() {
     let contents = fs::read_to_string("./codes.bshr").expect("Something went wrong reading the saved codes file");
     let delay = time::Duration::from_secs(1);
-    let codes = get_codes();
-    for code in contents.split("\n")
-    { 
-        if !codes.contains(code)
+    let mut done = false;
+    let mut first = true;
+
+    if get_codes().split("\n").count() == 0
+    {
+        println!("Did not find any already installed songs.\nMake sure the executable is placed in \"Beat Saber/Beat Saber_data/CustomLevels\".\nIf you do not have any songs downloaded please wait a moment and the download will start...");
+        thread::sleep(time::Duration::from_secs(3));
+    }
+
+    while !done
+    {
+        if !first
         {
-            open::that(format!("beatsaver://{}", code)).unwrap();
-            thread::sleep(delay);
+            first = true;
+            println!("Some songs failed... Retrying");
+        }
+        done = true;
+        let codes = get_codes();
+        for code in contents.split("\n")
+        { 
+            if !codes.contains(code)
+            {
+                done = false;
+                println!("Installing {}", code);
+                open::that(format!("beatsaver://{}", code)).unwrap();
+                thread::sleep(delay);
+            }
         }
     }
+    println!("All songs added, you now have {} songs!", get_codes().split("\n").count());
+    pause();
 }
 
 fn get_codes() -> String {

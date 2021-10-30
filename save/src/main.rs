@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::{stdin, stdout, Read, Write};
 
 trait StringUtils {
     fn substring(&self, start: usize, len: usize) -> Self;
@@ -10,9 +11,17 @@ impl StringUtils for String {
     }
 }
 
+fn pause() {
+    let mut stdout = stdout();
+    stdout.write(b"Press Enter to continue...").unwrap();
+    stdout.flush().unwrap();
+    stdin().read(&mut [0]).unwrap();
+}
+
 fn main() {
     let paths = fs::read_dir("./").unwrap();
     let mut codes = String::new();
+    let mut count = 0;
 
     for path in paths {
         let filename = path.unwrap().path();
@@ -27,10 +36,31 @@ fn main() {
 
         if code.chars().count() <= 5
         {
+            count += 1;
             codes.push_str(&code);
             codes.push_str("\n");
         }
     }
 
-    fs::write("./codes.bshr", codes).expect("Unable to write file");
+    match fs::write("./codes.bshr", codes)
+    {
+        Ok(_) =>
+        {
+            if count == 0
+            {
+                println!("Found {} songs.\nMake sure to place the executable in \"Beat Saber/Beat Saber_data/CustomLevels\" so that it can find the songs!", count);
+            }
+            else
+            {
+                println!("Found {} songs!", count);
+            }
+            pause();
+        }
+        Err(_) =>
+        {
+            println!("Error writing to file!");
+            pause();
+        }
+    }
+
 }
