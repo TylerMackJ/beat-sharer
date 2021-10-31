@@ -4,18 +4,18 @@ Ability to share songs through the usage of one-click codes on ModAssistant.
 
 # Saver Usage
 
-Place the executable in the your "Beat Saber/Beat Saber_Data/CustomLevels/" folder and run.
-This will generate a UID for you which you should tell to your friends to download songs.
+1. Place the executable in the your "Beat Saber/Beat Saber_Data/CustomLevels/" folder and run.
+1. This will generate a UID for you which you should tell to your friends to download songs.
 
 # Downloader Usage
 
-Place the executable in the your "Beat Saber/Beat Saber_Data/CustomLevels/" folder and run.
-Provide a friends UID to begin downloading their songs.
+1. Place the executable in the your "Beat Saber/Beat Saber_Data/CustomLevels/" folder and run.
+1. Provide a friends UID to begin downloading their songs.
 
 ## Recommendation
 
 In ModAssistant change the one-click install window to hide or close.
-For this to take effect you must turn off one-click, change the option, then reenable one-click installs.
+* For this to take effect you must turn off one-click, change the option, then reenable one-click installs.
 
 
 ## Notes
