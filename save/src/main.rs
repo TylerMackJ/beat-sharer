@@ -1,5 +1,12 @@
+use dotenv;
+use reqwest;
 use std::fs;
 use std::io::{stdin, stdout, Read, Write};
+use rand::Rng;
+
+
+#[macro_use]
+extern crate dotenv_codegen;
 
 trait StringUtils {
     fn substring(&self, start: usize, len: usize) -> Self;
@@ -19,6 +26,8 @@ fn pause() {
 }
 
 fn main() {
+    dotenv::dotenv().ok();
+
     let paths = fs::read_dir("./").unwrap();
     let mut codes = String::new();
     let mut count = 0;
@@ -38,29 +47,23 @@ fn main() {
         {
             count += 1;
             codes.push_str(&code);
-            codes.push_str("\n");
+            codes.push_str(",");
         }
     }
 
-    match fs::write("./codes.bshr", codes)
+    let mut rng = rand::thread_rng();
+    let uid: u8 = rng.gen();
+
+    let client = reqwest::blocking::Client::new();
+    let _res = client.put(format!("https://beat-sharer-default-rtdb.firebaseio.com/{}.json?auth={}", uid, dotenv!("secret"))).json(&codes).send().unwrap();
+
+    if count != 0
     {
-        Ok(_) =>
-        {
-            if count == 0
-            {
-                println!("Found {} songs.\nMake sure to place the executable in \"Beat Saber/Beat Saber_data/CustomLevels\" so that it can find the songs!", count);
-            }
-            else
-            {
-                println!("Found {} songs!", count);
-            }
-            pause();
-        }
-        Err(_) =>
-        {
-            println!("Error writing to file!");
-            pause();
-        }
+        println!("Your {} songs have been uploaded with the UID: {}, share this with your friends so they can get your songs!", count, uid);
     }
-
+    else 
+    {
+        println!("You are trying to upload 0 songs. Please make sure the executable is placed inside \"Beat Saber/Beat Saber_data/CustomLevels\"!");
+    }
+    pause();
 }

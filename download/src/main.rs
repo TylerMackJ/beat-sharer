@@ -1,6 +1,11 @@
+use dotenv;
+use reqwest;
 use std::fs;
 use std::{thread, time};
 use std::io::{stdin, stdout, Read, Write};
+
+#[macro_use]
+extern crate dotenv_codegen;
 
 trait StringUtils {
     fn substring(&self, start: usize, len: usize) -> Self;
@@ -20,12 +25,24 @@ fn pause() {
 }
 
 fn main() {
-    let contents = fs::read_to_string("./codes.bshr").expect("Something went wrong reading the saved codes file");
+    dotenv::dotenv().ok();
+
+    let mut uid = String::new();
+    println!("Enter the UID provided by your friend:");
+    let mut b = 0;
+    while b == 0
+    {
+        b = std::io::stdin().read_line(&mut uid).unwrap();
+    }
+    let mut contents = reqwest::blocking::get(format!("https://beat-sharer-default-rtdb.firebaseio.com/{}.json?auth={}", uid, dotenv!("secret"))).unwrap().text().unwrap();
+    contents = contents.substring(1, contents.chars().count() - 2);
+    println!("{}", contents);
+
     let delay = time::Duration::from_secs(1);
     let mut done = false;
     let mut first = true;
 
-    if get_codes().split("\n").count() == 0
+    if get_codes().split(",").count() == 0
     {
         println!("Did not find any already installed songs.\nMake sure the executable is placed in \"Beat Saber/Beat Saber_data/CustomLevels\".\nIf you do not have any songs downloaded please wait a moment and the download will start...");
         thread::sleep(time::Duration::from_secs(3));
@@ -40,7 +57,7 @@ fn main() {
         }
         done = true;
         let codes = get_codes();
-        for code in contents.split("\n")
+        for code in contents.split(",")
         { 
             if !codes.contains(code)
             {
@@ -51,7 +68,7 @@ fn main() {
             }
         }
     }
-    println!("All songs added, you now have {} songs!", get_codes().split("\n").count());
+    println!("All songs added, you now have {} songs!", get_codes().split(",").count());
     pause();
 }
 
@@ -73,7 +90,7 @@ fn get_codes() -> String {
         if code.chars().count() <= 5
         {
             codes.push_str(&code);
-            codes.push_str("\n");
+            codes.push_str(",");
         }
     }
     return codes
