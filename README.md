@@ -1,25 +1,23 @@
 # Beat-Sharer
 
-Ability to share songs through the usage of one-click codes on ModAssistant.
+Ability to share songs lists with others.
 
-# Saver Usage
+# Usage
 
-1. Place the executable in the your "Beat Saber/Beat Saber_Data/CustomLevels/" folder and run.
-1. This will generate a UID for you which you should tell to your friends to download songs.
+1. Run executable found in releases.
+2. Change your selected folder to your "Beat Saber/Beat Saber_Data/CustomLevels/" folder.
 
-# Downloader Usage
+## To Upload
 
-1. Place the executable in the your "Beat Saber/Beat Saber_Data/CustomLevels/" folder and run.
-1. Provide a friends UID to begin downloading their songs.
+3. Click on Upload button.
+4. An ID will be generated which can be used to share your uploaded songs.
 
-## Recommendation
+## To Download
 
-In ModAssistant change the one-click install window to hide or close.
-* For this to take effect you must turn off one-click, change the option, then reenable one-click installs.
+3. Enter the ID generated from another user and clock Download Songs.
+4. Be sure you have selected your "Beat Saber/Beat Saber_Data/CustomLevels/" folder. If you have not done this every song from the list will downloaded to the currently selected folder. They can simply be deleted.
 
-
-## Notes
+### Notes
 
 * There are a limited number of UIDs so your songs will be avaible until someone ends up generating the same UID. This should take quite a while until userbase grows.
-* The songs are limited to download at 1 song per second. This is reduce concurrent downloads. 
-* The downloader will skip already downloaded songs.
+* The downloader will skip already downloaded songs granted the "Beat Saber/Beat Saber_Data/CustomLevels/" folder is selected.
