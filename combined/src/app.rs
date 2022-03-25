@@ -22,10 +22,11 @@ use zip::read::ZipArchive;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
-//#[cfg_attr(feature = "persistence", serde(default))] // if we add new fields, give them default values when deserializing old state
+#[cfg_attr(feature = "persistence", serde(default))] // if we add new fields, give them default values when deserializing old state
 
 pub struct BeatSharerApp {
     custom_level_path: PathBuf,
+    thread_count: usize,
 
     #[cfg_attr(feature = "persistence", serde(skip))]
     upload_code: u8,
@@ -42,8 +43,51 @@ pub struct BeatSharerApp {
     #[cfg_attr(feature = "persistence", serde(skip))]
     codes: Vec<String>,
     #[cfg_attr(feature = "persistence", serde(skip))]
-    mutex: Arc<Mutex<String>>,
+    mutex: Arc<Mutex<Vec<String>>>,
+    #[cfg_attr(feature = "persistence", serde(skip))]
+    downloading: bool,
 
+}
+
+impl BeatSharerApp {
+    fn download(&mut self) {
+        self.downloading = true;
+        // Download
+        let mut contents = reqwest::blocking::get(format!("https://beat-sharer-default-rtdb.firebaseio.com/{}.json?auth={}", self.download_code, dotenv!("secret"))).unwrap().text().unwrap();
+        self.download_warning = false;
+        if contents == "null" {
+            self.download_error = true;
+        } else {
+            contents = contents.substring(1, contents.chars().count() - 2);
+            let mut songs_needed = Vec::new();
+            for song in contents.split(',') {
+                if !self.codes.contains(&String::from(song)) {
+                    songs_needed.push(String::from(song));
+                }
+            }
+            if self.thread_count > songs_needed.len() {
+                self.thread_count = songs_needed.len();
+            }
+            let bot = songs_needed.len() as f32 / self.thread_count as f32;
+            for thread in 0..self.thread_count {
+                let start = (thread as f32 * bot) as usize;
+                let mut end = ((thread + 1) as f32 * bot) as usize;
+
+                if thread == self.thread_count - 1 {
+                    end = songs_needed.len();
+                }
+
+                let cl_path = self.custom_level_path.clone();
+                let mutex = Arc::clone(&self.mutex);
+
+                let list = songs_needed[start..end].to_vec();
+
+                let _download_thread = thread::spawn(move || {
+                    download_songs(list, cl_path, mutex);
+                });
+            }
+        }
+    }
 }
 
 impl Default for BeatSharerApp {
@@ -51,6 +95,7 @@ impl Default for BeatSharerApp {
         let mut rng = rand::thread_rng();
         Self {
             custom_level_path: env::current_dir().unwrap(),
+            thread_count: std::thread::available_parallelism().unwrap().get() / 4,
             upload_code: rng.gen(),
             download_code: 0,
             download_code_buf: String::from(""),
@@ -58,7 +103,8 @@ impl Default for BeatSharerApp {
             download_warning: false,
             uploaded: false,
             codes: Vec::new(),
-            mutex: Arc::new(Mutex::new(String::from(""))),
+            mutex: Arc::new(Mutex::new(Vec::new())),
+            downloading: false,
         }
     }
 }
@@ -75,7 +121,7 @@ impl epi::App for BeatSharerApp {
             *self = epi::get_value(storage, epi::APP_KEY).unwrap_or_default()
         }
 
-        frame.set_window_size(egui::Vec2::new(500.0, 400.0));
+        frame.set_window_size(egui::Vec2::new(600.0, 400.0));
 
         self.codes = get_codes(self.custom_level_path.clone());
     }
@@ -91,6 +137,7 @@ impl epi::App for BeatSharerApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &epi::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
 
+            // Select folder menu
             ui.vertical(|ui| {
                 ui.heading("Selected Folder");
                 ui.label(format!("{} ({} Songs found)", self.custom_level_path.to_str().unwrap(), self.codes.len()));
@@ -104,13 +151,20 @@ impl epi::App for BeatSharerApp {
 
             ui.separator();
 
+            // Upload song menu
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
+                    ui.set_min_size(egui::Vec2::new(200.0, 60.0));
+                    ui.set_max_size(egui::Vec2::new(200.0, 60.0));
+
                     ui.heading("Upload");
+                    // Uploaded
                     if self.uploaded {
                         ui.label(format!("Uploaded {} songs to ID: {}", self.codes.len(), self.upload_code));
+                    // No songs
                     } else if self.codes.is_empty() {
                         ui.label("Found no songs to upload");
+                    // Click to upload
                     } else if ui.add(egui::Button::new(format!("Upload {} songs", self.codes.len()))).clicked() {
                         // Upload
                         let client = reqwest::blocking::Client::new();
@@ -125,63 +179,74 @@ impl epi::App for BeatSharerApp {
 
                 ui.separator();
 
+                // Download song menu
                 ui.vertical(|ui| {
+                    ui.set_min_size(egui::Vec2::new(400.0, 60.0));
+                    ui.set_max_size(egui::Vec2::new(400.0, 60.0));
+
                     ui.heading("Download");
                     ui.horizontal(|ui| {
+                        // Confirm CustomLevels folder
                         if self.download_warning {
-                            ui.label("Are you sure you have your CustomLevels folder selected?");
+                            ui.label("Are you sure your CustomLevels folder is selected?");
                             if ui.add(egui::Button::new("Yes")).clicked() {
-                                // Download
-                                let mut contents = reqwest::blocking::get(format!("https://beat-sharer-default-rtdb.firebaseio.com/{}.json?auth={}", self.download_code, dotenv!("secret"))).unwrap().text().unwrap();
-                                self.download_warning = false;
-                                if contents == "null" {
-                                    self.download_error = true;
-                                } else {
-                                    contents = contents.substring(1, contents.chars().count() - 2);
-                                    let mut songs_needed = Vec::new();
-                                    for song in contents.split(',') {
-                                        if !self.codes.contains(&String::from(song)) {
-                                            songs_needed.push(String::from(song));
-                                        }
-                                    }
-                                    let cl_path = self.custom_level_path.clone();
-                                    let mutex = Arc::clone(&self.mutex);
-                                    let _download_thread = thread::spawn(move || {
-                                        download_songs(songs_needed, cl_path, mutex);
-                                    });
-                                }
+                                self.download();
                             } else if ui.add(egui::Button::new("No")).clicked() {
                                 self.download_warning = false;
                             }
+                        // ID input and download button
                         } else {
+                            // ID Entry
                             if self.download_error {
-                                ui.add(egui::TextEdit::singleline(&mut self.download_code_buf).text_color(egui::Color32::RED).desired_width(100.0));
+                                ui.add(egui::TextEdit::singleline(&mut self.download_code_buf).hint_text("Bad ID").desired_width(75.0));
                             } else {
-                                ui.add(egui::TextEdit::singleline(&mut self.download_code_buf).hint_text("Enter ID").desired_width(100.0));
+                                ui.add(egui::TextEdit::singleline(&mut self.download_code_buf).hint_text("Enter ID").desired_width(75.0));
                             }
+                            // Download song button
                             if ui.add(egui::Button::new("Download Songs")).clicked() {
+                                // Grab ID
                                 match self.download_code_buf.parse::<u8>() {
                                     Ok(code) => {
                                         self.download_code = code;
                                         self.download_error = false;
-                                        self.download_warning = true;
+
+                                        // Run check if folder is not named properly
+                                        if self.custom_level_path.file_name().unwrap().to_str().unwrap() == "CustomLevels" {
+                                            self.download()
+                                        } else {
+                                            self.download_warning = true;
+                                        }
                                     },
-                                    Err(_) => self.download_error = true,
+                                    Err(_) => {
+                                        self.download_error = true;
+                                        self.download_code_buf = String::from("");
+                                    },
                                 }
                             }
                         }
-                    })
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Download Limit: ");
+                        ui.add(egui::Slider::new(&mut self.thread_count, 1..=std::thread::available_parallelism().unwrap().get() / 2).text(""));
+                    });
                 });
             });
         });
 
-        let guard = self.mutex.lock().unwrap();
-        let downloading_song = (*guard).clone();
-        drop(guard);
-        if !downloading_song.is_empty() {
+        // Downloads popup
+        if self.downloading {
+            let guard = self.mutex.lock().unwrap();
+            let downloading_songs = (*guard).clone();
+            drop(guard);
             egui::TopBottomPanel::bottom("Downloads").show(ctx, |ui| {
                 ui.heading("Downloading");
-                ui.label(downloading_song);
+                if downloading_songs.is_empty() {
+                    ui.label("Done");
+                } else {
+                    for song in downloading_songs {
+                        ui.label(song);
+                    }
+                }
             });
         }
     }
@@ -225,7 +290,7 @@ fn get_codes(path: PathBuf) -> Vec<String> {
     codes
 }
 
-fn download_songs(download_list: Vec<String>, download_path: PathBuf, mutex: Arc<Mutex<String>>) {
+fn download_songs(download_list: Vec<String>, download_path: PathBuf, mutex: Arc<Mutex<Vec<String>>>) {
     let mut failed_songs = Vec::new();
 
     for song in download_list {
@@ -247,7 +312,7 @@ fn download_songs(download_list: Vec<String>, download_path: PathBuf, mutex: Arc
                 let full_name = format!("{} ({} - {})", song, name, author);
 
                 let mut guard = mutex.lock().unwrap();
-                *guard = full_name.clone();
+                (*guard).push(full_name.clone());
                 drop(guard);
 
                 let mut dl_song = reqwest::blocking::get(dl_link).unwrap();
@@ -266,6 +331,16 @@ fn download_songs(download_list: Vec<String>, download_path: PathBuf, mutex: Arc
 
                 fs::remove_file(download_path.clone().join(format!("{}.zip", full_name.clone()))).unwrap();
 
+                let mut guard = mutex.lock().unwrap();
+                let list = (*guard).clone();
+                for (i, s) in list.iter().enumerate() {
+                    if s == &full_name {
+                        (*guard).remove(i);
+                        break;
+                    }
+                }
+                drop(guard);
+
             } else {
                 failed_songs.push(song);
             }
@@ -273,8 +348,4 @@ fn download_songs(download_list: Vec<String>, download_path: PathBuf, mutex: Arc
             failed_songs.push(song);
         }
     }
-
-    let mut guard = mutex.lock().unwrap();
-    *guard = String::from("Done");
-    drop(guard);
 }

@@ -15,6 +15,11 @@ fn main() {
     dotenv::dotenv().ok();
 
     let app = BeatSharerApp::default();
-    let native_options = eframe::NativeOptions::default();
+    //let native_options = eframe::NativeOptions::default();
+    let native_options = eframe::NativeOptions {
+        resizable: false,
+        ..Default::default()
+    };
+
     eframe::run_native(Box::new(app), native_options)
 }
