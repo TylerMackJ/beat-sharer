@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io;
 use std::path::PathBuf;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SongInfo {
     id: String,
     name: String,
@@ -59,10 +59,10 @@ pub fn get_song_info(id: String) -> Result<SongInfo, APIErr> {
     })
 }
 
-pub fn download_song(songInfo: SongInfo, path: PathBuf) -> Result<PathBuf, APIErr> {
-    let mut response = reqwest::blocking::get(songInfo.download_url)?;
-    let file_path = path.clone().join(format!("{}.zip", songInfo));
-    let mut file = File::create(path.clone().join(file_path))?; // needs to become APIErr::FileCreationFailed
-    io::copy(&mut response, &mut file)?; // needs to become APIErr::FileCreationFailed
+pub fn download_song(song_info: SongInfo, path: PathBuf) -> Result<PathBuf, APIErr> {
+    let mut response = reqwest::blocking::get(song_info.clone().download_url)?;
+    let file_path = path.clone().join(format!("{}.zip", song_info));
+    let mut file = File::create(file_path.clone())?;
+    io::copy(&mut response, &mut file)?;
     Ok(file_path)
 }
