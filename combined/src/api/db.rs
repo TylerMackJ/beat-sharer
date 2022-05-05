@@ -1,7 +1,5 @@
-use crate::add_substring;
 use crate::api::*;
-
-add_substring!();
+use crate::util::StringUtils;
 
 macro_rules! check_id {
     ($id: expr) => {
