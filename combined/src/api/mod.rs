@@ -1,6 +1,6 @@
-use reqwest::Error;
 use std::io;
 use std::num::ParseIntError;
+use zip::result::ZipError;
 
 pub mod beatsaver;
 pub mod db;
@@ -16,26 +16,21 @@ pub enum APIErr {
     UnzipFailed,
 }
 
-impl From<reqwest::Error> for APIErr {
-    fn from(_: Error) -> Self {
-        APIErr::ReqwestFailed
-    }
+macro_rules! impl_from_error_to_api_err {
+    ($($from: ty, $err: expr),+) => {
+        $(
+            impl From<$from> for APIErr {
+                fn from(_: $from) -> Self {
+                    $err
+                }
+            }
+        )+
+    };
 }
 
-impl From<ParseIntError> for APIErr {
-    fn from(_: ParseIntError) -> Self {
-        APIErr::InvalidIndex
-    }
-}
-
-impl From<io::Error> for APIErr {
-    fn from(_: io::Error) -> Self {
-        APIErr::FileCreationFailed
-    }
-}
-
-impl From<zip::result::ZipError> for APIErr {
-    fn from(_: zip::result::ZipError) -> Self {
-        APIErr::UnzipFailed
-    }
+impl_from_error_to_api_err! {
+    reqwest::Error, APIErr::ReqwestFailed,
+    ParseIntError, APIErr::InvalidIndex,
+    io::Error, APIErr::FileCreationFailed,
+    ZipError, APIErr::UnzipFailed
 }
