@@ -68,8 +68,14 @@ fn download_song(song_info: SongInfo) -> Result<Cursor<Vec<u8>>, APIErr> {
 
 fn unzip_song(song_info: SongInfo, cursor: Cursor<Vec<u8>>, path: PathBuf) -> Result<(), APIErr> {
     let song_path = path.clone().join(PathBuf::from(song_info.to_string()));
-    std::fs::create_dir(song_path)?;
+    std::fs::create_dir(song_path.clone())?;
     let mut zip = ZipArchive::new(cursor)?;
-    zip.extract(song_path)?;
+    zip.extract(song_path.clone())?;
+    Ok(())
+}
+
+pub fn download_and_unzip_song(song_info: SongInfo, path: PathBuf) -> Result<(), APIErr> {
+    let cursor = download_song(song_info.clone())?;
+    unzip_song(song_info.clone(), cursor, path)?;
     Ok(())
 }
