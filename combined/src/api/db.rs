@@ -1,15 +1,8 @@
 use crate::add_substring;
 use crate::api::*;
+use crate::check_id;
 
 add_substring!();
-
-macro_rules! check_id {
-    ($id: expr) => {
-        if $id.parse::<u8>().is_err() {
-            return Err(APIErr::InvalidID);
-        }
-    };
-}
 
 const DB_ADDR: &str = "https://beat-sharer-default-rtdb.firebaseio.com";
 
@@ -82,12 +75,7 @@ fn put_index(index: u8) -> Result<(), APIErr> {
 }
 
 pub fn get_and_inc_index() -> Result<u8, APIErr> {
-    let index = match get_index() {
-        Ok(i) => i,
-        Err(e) => return Err(e),
-    };
-    match put_index(index + 1) {
-        Ok(()) => Ok(index),
-        Err(e) => Err(e),
-    }
+    let index = get_index()?;
+    put_index(index + 1)?;
+    Ok(index)
 }

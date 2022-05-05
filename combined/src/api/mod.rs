@@ -6,4 +6,14 @@ pub enum APIErr {
     InvalidID,
     IDNotFound,
     ReqwestFailed,
+    SongNotFound,
+}
+
+#[macro_export]
+macro_rules! check_id {
+    ($id: expr) => {
+        if $id.parse::<u8>().is_err() {
+            return Err(APIErr::InvalidID);
+        }
+    };
 }
