@@ -1,8 +1,5 @@
-use crate::add_substring;
 use crate::api::*;
-use crate::check_id;
-
-add_substring!();
+use crate::util::StringUtils;
 
 const DB_ADDR: &str = "https://beat-sharer-default-rtdb.firebaseio.com";
 
