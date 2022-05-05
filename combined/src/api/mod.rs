@@ -7,6 +7,7 @@ pub enum APIErr {
     IDNotFound,
     ReqwestFailed,
     SongNotFound,
+    FileCreationFailed,
 }
 
 #[macro_export]

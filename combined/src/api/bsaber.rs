@@ -1,6 +1,9 @@
 use crate::api::*;
-use crate::check_id;
+use std::fs::File;
+use std::io;
+use std::path::PathBuf;
 
+#[derive(Debug)]
 pub struct SongInfo {
     id: String,
     name: String,
@@ -8,10 +11,15 @@ pub struct SongInfo {
     download_url: String,
 }
 
+impl std::fmt::Display for SongInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ({} - {})", self.id, self.name, self.author)
+    }
+}
+
 const BSABER_ADDR: &str = "https://api.beatsaver.com";
 
 pub fn get_song_info(id: String) -> Result<SongInfo, APIErr> {
-    check_id!(id);
     let addr = format!("{}/maps/id/{}", BSABER_ADDR, id);
     let contents = match reqwest::blocking::get(addr) {
         Ok(con) => match con.text() {
@@ -49,4 +57,12 @@ pub fn get_song_info(id: String) -> Result<SongInfo, APIErr> {
         download_url,
         author,
     })
+}
+
+pub fn download_song(songInfo: SongInfo, path: PathBuf) -> Result<PathBuf, APIErr> {
+    let mut response = reqwest::blocking::get(songInfo.download_url)?;
+    let file_path = path.clone().join(format!("{}.zip", songInfo));
+    let mut file = File::create(path.clone().join(file_path))?; // needs to become APIErr::FileCreationFailed
+    io::copy(&mut response, &mut file)?; // needs to become APIErr::FileCreationFailed
+    Ok(file_path)
 }

@@ -17,6 +17,11 @@ extern crate dotenv_codegen;
 fn main() {
     dotenv::dotenv().ok();
 
+    println!(
+        "{}",
+        api::bsaber::get_song_info("10065".to_string()).unwrap()
+    );
+
     /*
     let mut bytes = include_bytes!("icon.png").to_vec();
     let mut im = image::io::Reader::new(std::io::Cursor::new(&mut bytes));

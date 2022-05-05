@@ -74,6 +74,6 @@ fn put_index(index: u8) -> Result<(), APIErr> {
 
 pub fn get_and_inc_index() -> Result<u8, APIErr> {
     let index = get_index()?;
-    put_index(index + 1)?;
+    put_index(index.wrapping_add(1))?;
     Ok(index)
 }
