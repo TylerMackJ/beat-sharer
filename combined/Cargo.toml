@@ -4,17 +4,22 @@ version = "0.1.0"
 edition = "2021"
 
 [profile.release]
-lto = "true"
+lto = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# todo update
 eframe = "0.17.0"
-egui = "0.17.0"
+# todo update
+egui = { version = "0.17.0", features = ["persistence"] }
 tinyfiledialogs = "3.0"
 dotenv = "0.15.0"
 dotenv_codegen = "0.15.0"
+# todo remove blocking
 reqwest = { version = "0.11", features = ["blocking", "json"] }
+# tokio = "1.18.1" todo async for downloads
 zip = "0.6.0"
+# todo replace image with png
 image = "0.24.1"
 async-std = "1.11.0"
