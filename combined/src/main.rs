@@ -3,7 +3,10 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] //Hide console window in release builds on Windows, this blocks stdout.
 
+pub mod api;
 mod app;
+pub mod util;
+
 pub use app::BeatSharerApp;
 
 #[macro_use]
@@ -14,6 +17,7 @@ extern crate dotenv_codegen;
 fn main() {
     dotenv::dotenv().ok();
 
+    /*
     let mut bytes = include_bytes!("icon.png").to_vec();
     let mut im = image::io::Reader::new(std::io::Cursor::new(&mut bytes));
     im.set_format(image::ImageFormat::Png);
@@ -30,4 +34,5 @@ fn main() {
     };
 
     eframe::run_native(Box::new(app), native_options)
+    */
 }
