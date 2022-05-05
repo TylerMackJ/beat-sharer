@@ -43,7 +43,7 @@ pub fn put_list(index: String, list: String) -> Result<(), APIErr> {
 
 /// returns Ok if index is parsable to a u8, else API::InvalidIndex
 #[inline(always)]
-fn check_index(index: &String) -> Result<(), APIErr> {
+fn check_index(index: &str) -> Result<(), APIErr> {
     index.parse::<u8>()?;
     Ok(())
 }

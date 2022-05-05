@@ -1,8 +1,8 @@
-use std::io;
 use reqwest::Error;
+use std::io;
 use std::num::ParseIntError;
 
-pub mod bsaber;
+pub mod beatsaver;
 pub mod db;
 
 #[derive(Debug)]
@@ -13,6 +13,7 @@ pub enum APIErr {
     SongNotFound,
     FileCreationFailed,
     InvalidText,
+    UnzipFailed,
 }
 
 impl From<reqwest::Error> for APIErr {
@@ -30,5 +31,11 @@ impl From<ParseIntError> for APIErr {
 impl From<io::Error> for APIErr {
     fn from(_: io::Error) -> Self {
         APIErr::FileCreationFailed
+    }
+}
+
+impl From<zip::result::ZipError> for APIErr {
+    fn from(_: zip::result::ZipError) -> Self {
+        APIErr::UnzipFailed
     }
 }

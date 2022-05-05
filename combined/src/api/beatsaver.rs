@@ -1,7 +1,7 @@
 use crate::api::*;
-use std::fs::File;
-use std::io;
+use std::io::{self, Cursor};
 use std::path::PathBuf;
+use zip::read::ZipArchive;
 
 #[derive(Clone, Debug)]
 pub struct SongInfo {
@@ -59,10 +59,17 @@ pub fn get_song_info(id: String) -> Result<SongInfo, APIErr> {
     })
 }
 
-pub fn download_song(song_info: SongInfo, path: PathBuf) -> Result<PathBuf, APIErr> {
+fn download_song(song_info: SongInfo) -> Result<Cursor<Vec<u8>>, APIErr> {
     let mut response = reqwest::blocking::get(song_info.clone().download_url)?;
-    let file_path = path.clone().join(format!("{}.zip", song_info));
-    let mut file = File::create(file_path.clone())?;
-    io::copy(&mut response, &mut file)?;
-    Ok(file_path)
+    let mut cursor = Cursor::new(Vec::new());
+    io::copy(&mut response, &mut cursor)?;
+    Ok(cursor)
+}
+
+fn unzip_song(song_info: SongInfo, cursor: Cursor<Vec<u8>>, path: PathBuf) -> Result<(), APIErr> {
+    let song_path = path.clone().join(PathBuf::from(song_info.to_string()));
+    std::fs::create_dir(song_path)?;
+    let mut zip = ZipArchive::new(cursor)?;
+    zip.extract(song_path)?;
+    Ok(())
 }
