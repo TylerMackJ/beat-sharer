@@ -1,20 +1,27 @@
+use reqwest::Error;
+use std::num::ParseIntError;
+
 pub mod bsaber;
 pub mod db;
 
 #[derive(Debug)]
 pub enum APIErr {
-    InvalidID,
-    IDNotFound,
+    InvalidIndex,
+    IndexNotFound,
     ReqwestFailed,
     SongNotFound,
     FileCreationFailed,
+    InvalidText,
 }
 
-#[macro_export]
-macro_rules! check_id {
-    ($id: expr) => {
-        if $id.parse::<u8>().is_err() {
-            return Err(APIErr::InvalidID);
-        }
-    };
+impl From<reqwest::Error> for APIErr {
+    fn from(_: Error) -> Self {
+        APIErr::ReqwestFailed
+    }
+}
+
+impl From<ParseIntError> for APIErr {
+    fn from(_: ParseIntError) -> Self {
+        APIErr::InvalidIndex
+    }
 }
