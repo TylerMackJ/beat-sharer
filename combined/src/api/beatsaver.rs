@@ -1,10 +1,7 @@
 use crate::api::*;
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use zip::read::ZipArchive;
-use crate::api::db::get_list;
 
 #[derive(Clone, Debug)]
 pub struct SongInfo {
@@ -21,7 +18,7 @@ impl std::fmt::Display for SongInfo {
 }
 
 const BSABER_ADDR: &str = "https://api.beatsaver.com";
-
+// todo the idiomatic update
 pub(in crate::api) async fn get_song_info(id: String) -> Result<SongInfo, APIErr> {
     let addr = format!("{}/maps/id/{}", BSABER_ADDR, id);
     let contents = match reqwest::get(addr).await {
@@ -72,28 +69,19 @@ async fn download_song(song_info: &SongInfo) -> Result<Vec<u8>, APIErr> {
     Ok(bytes_out)
 }
 
-fn unzip_song(song_info: SongInfo, bytes: Vec<u8>, path: PathBuf) -> Result<(), APIErr> {
-    let song_path = path.clone().join(PathBuf::from(song_info.to_string()));
+fn unzip_song(song_info: SongInfo, bytes: Vec<u8>, dir: PathBuf) -> Result<(), APIErr> {
+    let song_path = dir.clone().join(PathBuf::from(song_info.to_string()));
     std::fs::create_dir(song_path.clone())?;
     let mut zip = ZipArchive::new(Cursor::new(bytes))?;
     zip.extract(song_path.clone())?;
     Ok(())
 }
 
-async fn download_and_unzip_song(song_info: SongInfo, path: PathBuf) -> Result<(), APIErr> {
+pub(in crate::api) async fn download_and_unzip_song(song_info: SongInfo, dir: PathBuf) -> Result<(), APIErr> {
     let bytes = download_song(&song_info).await?;
     // if unzip fails, look at download_song for a note
-    unzip_song(song_info, bytes, path)?;
+    unzip_song(song_info, bytes, dir)?;
     Ok(())
-}
-
-pub(in crate::api) async fn download_songs(songs_and_paths: Vec<(SongInfo, PathBuf)>, updater: DownloadUpdater) {
-    todo!("this does not currently make use of max_concurrent_downloads");
-    for (song_info, path) in songs_and_paths {
-        // todo errors are not handled currently
-        tokio::spawn(download_and_unzip_song(song_info, path)).await;
-        updater.increment_downloaded();
-    }
 }
 
 

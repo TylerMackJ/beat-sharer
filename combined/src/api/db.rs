@@ -7,7 +7,7 @@ pub(in crate::api) async fn get_list(index: u8) -> Result<Vec<String>, APIErr> {
     let auth = dotenv!("secret");
     let addr = format!("{}/{}.json?auth={}", DB_ADDR, index, auth);
     let response = reqwest::get(addr).await?;
-    // can't use From here since that would just map to APIErr::ReqwestFailed
+    // can't use implicit `?` From here since that would just map to APIErr::ReqwestFailed
     let mut contents = response.text().await.map_err(|_| APIErr::InvalidText)?;
 
     if contents == "null" {
