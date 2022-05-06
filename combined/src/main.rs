@@ -19,8 +19,8 @@ extern crate dotenv_codegen;
 fn main() {
     dotenv::dotenv().ok();
 
-    let song_info = api::beatsaver::get_song_info("10065".to_string()).unwrap();
-    api::beatsaver::download_and_unzip_song(song_info, PathBuf::from(".")).unwrap();
+    //let song_info = api::beatsaver::get_song_info("10065".to_string()).unwrap();
+    //api::beatsaver::download_and_unzip_song(song_info, PathBuf::from(".")).unwrap();
 
     /*
     let mut bytes = include_bytes!("icon.png").to_vec();

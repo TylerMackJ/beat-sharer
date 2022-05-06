@@ -1,7 +1,10 @@
 use crate::api::*;
-use std::io::{self, Cursor};
+use std::io::Cursor;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use zip::read::ZipArchive;
+use crate::api::db::get_list;
 
 #[derive(Clone, Debug)]
 pub struct SongInfo {
@@ -19,10 +22,10 @@ impl std::fmt::Display for SongInfo {
 
 const BSABER_ADDR: &str = "https://api.beatsaver.com";
 
-pub fn get_song_info(id: String) -> Result<SongInfo, APIErr> {
+pub(in crate::api) async fn get_song_info(id: String) -> Result<SongInfo, APIErr> {
     let addr = format!("{}/maps/id/{}", BSABER_ADDR, id);
-    let contents = match reqwest::blocking::get(addr) {
-        Ok(con) => match con.text() {
+    let contents = match reqwest::get(addr).await {
+        Ok(con) => match con.text().await {
             Ok(con) => con,
             Err(_) => return Err(APIErr::ReqwestFailed),
         },
@@ -59,23 +62,38 @@ pub fn get_song_info(id: String) -> Result<SongInfo, APIErr> {
     })
 }
 
-fn download_song(song_info: SongInfo) -> Result<Cursor<Vec<u8>>, APIErr> {
-    let mut response = reqwest::blocking::get(song_info.clone().download_url)?;
-    let mut cursor = Cursor::new(Vec::new());
-    io::copy(&mut response, &mut cursor)?;
-    Ok(cursor)
+async fn download_song(song_info: &SongInfo) -> Result<Vec<u8>, APIErr> {
+    let response = reqwest::get(&song_info.download_url).await?;
+    // the .bytes call is untested here, not sure if it converts the entire HTTP GET response into
+    // bytes or just the data we need here
+    let mut bytes_in = &response.bytes().await?.to_vec()[..];
+    let mut bytes_out = Vec::new();
+    tokio::io::copy(&mut bytes_in, &mut bytes_out).await?;
+    Ok(bytes_out)
 }
 
-fn unzip_song(song_info: SongInfo, cursor: Cursor<Vec<u8>>, path: PathBuf) -> Result<(), APIErr> {
+fn unzip_song(song_info: SongInfo, bytes: Vec<u8>, path: PathBuf) -> Result<(), APIErr> {
     let song_path = path.clone().join(PathBuf::from(song_info.to_string()));
     std::fs::create_dir(song_path.clone())?;
-    let mut zip = ZipArchive::new(cursor)?;
+    let mut zip = ZipArchive::new(Cursor::new(bytes))?;
     zip.extract(song_path.clone())?;
     Ok(())
 }
 
-pub fn download_and_unzip_song(song_info: SongInfo, path: PathBuf) -> Result<(), APIErr> {
-    let cursor = download_song(song_info.clone())?;
-    unzip_song(song_info.clone(), cursor, path)?;
+async fn download_and_unzip_song(song_info: SongInfo, path: PathBuf) -> Result<(), APIErr> {
+    let bytes = download_song(&song_info).await?;
+    // if unzip fails, look at download_song for a note
+    unzip_song(song_info, bytes, path)?;
     Ok(())
 }
+
+pub(in crate::api) async fn download_songs(songs_and_paths: Vec<(SongInfo, PathBuf)>, updater: DownloadUpdater) {
+    todo!("this does not currently make use of max_concurrent_downloads");
+    for (song_info, path) in songs_and_paths {
+        // todo errors are not handled currently
+        tokio::spawn(download_and_unzip_song(song_info, path)).await;
+        updater.increment_downloaded();
+    }
+}
+
+

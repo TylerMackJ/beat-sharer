@@ -16,9 +16,9 @@ egui = { version = "0.17.0", features = ["persistence"] }
 tinyfiledialogs = "3.0"
 dotenv = "0.15.0"
 dotenv_codegen = "0.15.0"
-# todo remove blocking
-reqwest = { version = "0.11", features = ["blocking", "json"] }
-# tokio = "1.18.1" todo async for downloads
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1.18.1", features = ["rt-multi-thread"] }
+lazy_static = "1.4.0"
 zip = "0.6.0"
 # todo replace image with png
 image = "0.24.1"
