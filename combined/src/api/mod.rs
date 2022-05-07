@@ -1,5 +1,5 @@
 use std::io;
-use std::num::{NonZeroUsize, ParseIntError};
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -171,7 +171,6 @@ impl SharedInfo {
 
 #[derive(Debug)]
 pub enum APIErr {
-    InvalidIndex,
     IndexNotFound,
     ReqwestFailed,
     SongNotFound,
@@ -194,7 +193,6 @@ macro_rules! impl_from_error_to_api_err {
 
 impl_from_error_to_api_err! {
     reqwest::Error, APIErr::ReqwestFailed,
-    ParseIntError, APIErr::InvalidIndex,
     io::Error, APIErr::FileCreationFailed,
     ZipError, APIErr::UnzipFailed
 }
