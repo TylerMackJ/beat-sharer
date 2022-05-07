@@ -12,8 +12,9 @@ pub use app::BeatSharerApp;
 #[macro_use]
 extern crate dotenv_codegen;
 
-// When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     dotenv::dotenv().ok();
+
+    let native_options = eframe::NativeOptions::default();
 }

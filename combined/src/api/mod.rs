@@ -5,7 +5,7 @@ use std::io;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
 use zip::result::ZipError;
 

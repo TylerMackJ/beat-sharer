@@ -1,5 +1,5 @@
 use crate::util::StringUtils;
-use eframe::{egui, epi};
+use eframe::egui;
 use std::path::PathBuf;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.

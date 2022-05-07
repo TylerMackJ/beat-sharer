@@ -9,10 +9,9 @@ lto = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# todo update
-eframe = "0.17.0"
-# todo update
-egui = { version = "0.17.0", features = ["persistence"] }
+egui = "0.18.1"
+eframe = { version = "0.18.0", features = ["persistence"] }
+serde = { version = "1", features = ["derive"] } # You only need this if you want app persistence
 tinyfiledialogs = "3.0"
 dotenv = "0.15.0"
 dotenv_codegen = "0.15.0"
