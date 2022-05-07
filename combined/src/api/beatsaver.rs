@@ -3,14 +3,6 @@ use std::io::Cursor;
 use std::path::PathBuf;
 use zip::read::ZipArchive;
 
-#[derive(Clone, Debug)]
-pub struct SongInfo {
-    id: String,
-    name: String,
-    author: String,
-    download_url: String,
-}
-
 impl std::fmt::Display for SongInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} ({} - {})", self.id, self.name, self.author)

@@ -3,6 +3,10 @@ use crate::util::StringUtils;
 
 const DB_ADDR: &str = "https://beat-sharer-default-rtdb.firebaseio.com";
 
+lazy_static! {
+    static ref CLIENT: reqwest::Client = reqwest::Client::new();
+}
+
 pub(in crate::api) async fn get_list(index: u8) -> Result<Vec<String>, APIErr> {
     let auth = dotenv!("secret");
     let addr = format!("{}/{}.json?auth={}", DB_ADDR, index, auth);
@@ -24,8 +28,7 @@ pub(in crate::api) async fn get_list(index: u8) -> Result<Vec<String>, APIErr> {
 }
 
 pub(in crate::api) async fn put_list(index: u8, list: String) -> Result<(), APIErr> {
-    let client = reqwest::Client::new();
-    client
+    CLIENT
         .put(format!(
             "{}/{}.json?auth={}",
             DB_ADDR,
@@ -33,7 +36,8 @@ pub(in crate::api) async fn put_list(index: u8, list: String) -> Result<(), APIE
             dotenv!("secret")
         ))
         .json(&list)
-        .send().await?;
+        .send()
+        .await?;
     Ok(())
 }
 
@@ -48,11 +52,11 @@ async fn get_index() -> Result<u8, APIErr> {
 }
 
 async fn put_index(index: u8) -> Result<(), APIErr> {
-    let client = reqwest::Client::new();
-    client
+    CLIENT
         .put(format!("{}/index.json?auth={}", DB_ADDR, dotenv!("secret")))
         .json(&index.to_string())
-        .send().await?;
+        .send()
+        .await?;
     Ok(())
 }
 
