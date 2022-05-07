@@ -4,8 +4,8 @@ use lazy_static::lazy_static;
 use std::io;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::sync::oneshot;
 use zip::result::ZipError;
 
@@ -61,6 +61,7 @@ pub fn download(
     max_concurrent_downloads: NonZeroUsize,
 ) -> DownloadObserver {
     let (updater, observer) = SharedInfo::create(max_concurrent_downloads);
+    updater.set_downloading(true);
     ASYNC_RUNTIME.spawn(download_list_async(id_list, dir, updater));
     observer
 }
@@ -84,6 +85,7 @@ async fn download_list_async(mut id_list: Vec<String>, dir: PathBuf, updater: Do
                 }
             }
         }
+        updater.set_downloading(false);
     }
 }
 
@@ -127,6 +129,10 @@ impl DownloadObserver {
         self.info
             .max_concurrent_downloads
             .store(n.get(), Ordering::Release);
+    }
+
+    pub fn downloading(&self) -> bool {
+        self.info.downloading.load(Ordering::Acquire)
     }
 }
 
@@ -176,8 +182,8 @@ impl DownloadUpdater {
         NonZeroUsize::new(max_threads).unwrap()
     }
 
-    pub fn downloading(&self) -> bool {
-        todo!()
+    pub fn set_downloading(&self, b: bool) {
+        self.info.downloading.store(b, Ordering::Release);
     }
 }
 
@@ -186,6 +192,7 @@ struct SharedInfo {
     ongoing_downloads: Mutex<Vec<String>>,
     failed_downloads: Mutex<Vec<(String, APIErr)>>,
     max_concurrent_downloads: AtomicUsize,
+    downloading: AtomicBool,
 }
 
 impl SharedInfo {
@@ -195,6 +202,7 @@ impl SharedInfo {
             ongoing_downloads: Default::default(),
             failed_downloads: Default::default(),
             max_concurrent_downloads: AtomicUsize::new(max_concurrent_downloads.get()),
+            downloading: Default::default(),
         }
     }
 
