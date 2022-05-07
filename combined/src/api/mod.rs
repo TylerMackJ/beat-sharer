@@ -84,21 +84,31 @@ async fn download_list_async(
 
         while handles.len() > updater.get_max_concurrent_downloads().get() {
             if let Some(result) = handles.next().await {
-                match result {
-                    Ok((id, Ok(_))) => {
-                        updater.increment_downloaded().await;
-                        updater.remove_ongoing_download(id);
-                    }
-                    Ok((id, Err(err))) => {
-                        updater.add_failure(id.clone(), err).await;
-                        updater.remove_ongoing_download(id);
-                    }
-                    Err(err) => panic!("error joining with download task: {}", err),
-                }
+                handle_result(&updater, result).await;
             }
         }
     }
+    handles
+        .for_each(|result| handle_result(&updater, result))
+        .await;
     updater.set_downloading(false);
+}
+
+async fn handle_result(
+    updater: &DownloadUpdater,
+    result: Result<(String, Result<(), APIErr>), tokio::task::JoinError>,
+) {
+    match result {
+        Ok((id, Ok(_))) => {
+            updater.increment_downloaded().await;
+            updater.remove_ongoing_download(id);
+        }
+        Ok((id, Err(err))) => {
+            updater.add_failure(id.clone(), err).await;
+            updater.remove_ongoing_download(id);
+        }
+        Err(err) => panic!("error joining with download task: {}", err),
+    }
 }
 
 async fn download_async(id: String, dir: PathBuf) -> (String, Result<(), APIErr>) {
