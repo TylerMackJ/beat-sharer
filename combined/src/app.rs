@@ -98,6 +98,7 @@ impl eframe::App for BeatSharerApp {
             if let Ok(list) = r.try_recv() {
                 self.download_status = DownloadStatus::Downloading(api::download(
                     list.unwrap(),
+                    self.codes.clone(),
                     self.custom_level_path.clone(),
                     std::num::NonZeroUsize::new(
                         std::thread::available_parallelism()
@@ -180,8 +181,12 @@ impl eframe::App for BeatSharerApp {
 
                     ui.heading("Download");
                     ui.horizontal(|ui| {
-                        // todo allow to download with no other songs
-                        if self.codes.is_empty() {
+                        if let DownloadStatus::GettingList(_) = self.download_status {
+                            ui.label("Getting list...");
+                        } else if let DownloadStatus::Downloading(_) = self.download_status {
+                            ui.label("Downloading Songs...");
+                            // todo allow to download with no other songs
+                        } else if self.codes.is_empty() {
                             ui.label("Are you sure your CustomLevels folder is selected?");
                         } else {
                             // todo bad id

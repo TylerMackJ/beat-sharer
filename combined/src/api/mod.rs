@@ -57,17 +57,26 @@ pub fn get_and_inc_index() -> oneshot::Receiver<Result<u8, APIErr>> {
 
 pub fn download(
     id_list: Vec<String>,
+    local_list: Vec<String>,
     dir: PathBuf,
     max_concurrent_downloads: NonZeroUsize,
 ) -> DownloadObserver {
     let (updater, observer) = SharedInfo::create(max_concurrent_downloads);
     updater.set_downloading(true);
-    ASYNC_RUNTIME.spawn(download_list_async(id_list, dir, updater));
+    ASYNC_RUNTIME.spawn(download_list_async(id_list, local_list, dir, updater));
     observer
 }
 
-async fn download_list_async(mut id_list: Vec<String>, dir: PathBuf, updater: DownloadUpdater) {
+async fn download_list_async(
+    mut id_list: Vec<String>,
+    local_list: Vec<String>,
+    dir: PathBuf,
+    updater: DownloadUpdater,
+) {
     let mut handles = FuturesUnordered::new();
+
+    id_list.retain(|id| !local_list.contains(id));
+
     while let Some(id) = id_list.pop() {
         let handle = tokio::spawn(download_async(id.clone(), dir.clone()));
         updater.add_ongoing_download(id);
@@ -88,8 +97,8 @@ async fn download_list_async(mut id_list: Vec<String>, dir: PathBuf, updater: Do
                 }
             }
         }
-        updater.set_downloading(false);
     }
+    updater.set_downloading(false);
 }
 
 async fn download_async(id: String, dir: PathBuf) -> (String, Result<(), APIErr>) {
@@ -186,6 +195,7 @@ impl DownloadUpdater {
     }
 
     pub fn set_downloading(&self, b: bool) {
+        println!("{}", b);
         self.info.downloading.store(b, Ordering::Release);
     }
 }
