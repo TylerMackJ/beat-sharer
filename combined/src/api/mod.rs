@@ -20,6 +20,7 @@ const POISONED_MUTEX_MESSAGE: &str =
 lazy_static! {
     static ref ASYNC_RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_io()
+        .enable_time()
         .build()
         .unwrap();
 }
