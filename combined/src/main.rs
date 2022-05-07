@@ -7,7 +7,7 @@ pub mod api;
 mod app;
 pub mod util;
 
-pub use app::BeatSharerApp;
+//pub use app::BeatSharerApp;
 
 #[macro_use]
 extern crate dotenv_codegen;
@@ -17,4 +17,9 @@ fn main() {
     dotenv::dotenv().ok();
 
     let native_options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "Beat Sharer",
+        native_options,
+        Box::new(|cc| Box::new(app::BeatSharerApp::new(cc))),
+    )
 }

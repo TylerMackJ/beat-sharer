@@ -46,8 +46,8 @@ async fn get_index() -> Result<u8, APIErr> {
     let addr = format!("{}/index.json?auth={}", DB_ADDR, auth);
     let response = reqwest::get(addr).await?;
     // can't use From here since that would just map to APIErr::ReqwestFailed
-    let contents = response.text().await.map_err(|_| APIErr::InvalidText)?;
-
+    let mut contents = response.text().await.map_err(|_| APIErr::InvalidText)?;
+    contents = contents.substring(1, contents.len() - 1);
     Ok(contents.parse::<u8>().unwrap())
 }
 
