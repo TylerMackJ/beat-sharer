@@ -80,7 +80,10 @@ async fn download_list_async(mut id_list: Vec<String>, dir: PathBuf, updater: Do
                         updater.increment_downloaded().await;
                         updater.remove_ongoing_download(id);
                     }
-                    Ok((id, Err(err))) => updater.add_failure(id, err).await,
+                    Ok((id, Err(err))) => {
+                        updater.add_failure(id.clone(), err).await;
+                        updater.remove_ongoing_download(id);
+                    }
                     Err(err) => panic!("error joining with download task: {}", err),
                 }
             }
