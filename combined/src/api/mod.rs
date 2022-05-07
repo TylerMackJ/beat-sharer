@@ -175,6 +175,10 @@ impl DownloadUpdater {
         // the setters for max_concurrent_downloads only allow setting it to a NonZeroUsize, so unwrap is ok here
         NonZeroUsize::new(max_threads).unwrap()
     }
+
+    pub fn downloading(&self) -> bool {
+        todo!()
+    }
 }
 
 struct SharedInfo {
