@@ -5,7 +5,7 @@ use std::io;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::sync::oneshot;
 use zip::result::ZipError;
 
@@ -106,6 +106,22 @@ impl DownloadObserver {
         self.info.downloaded.load(Ordering::Acquire)
     }
 
+    pub fn ongoing_downloads(&self) -> Vec<String> {
+        self.info
+            .ongoing_downloads
+            .lock()
+            .expect(POISONED_MUTEX_MESSAGE)
+            .clone()
+    }
+
+    pub fn failed_downloads(&self) -> Vec<(String, APIErr)> {
+        self.info
+            .failed_downloads
+            .lock()
+            .expect(POISONED_MUTEX_MESSAGE)
+            .clone()
+    }
+
     pub fn set_max_concurrent_downloads(&self, n: NonZeroUsize) {
         self.info
             .max_concurrent_downloads
@@ -196,7 +212,7 @@ pub struct SongInfo {
     download_url: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum APIErr {
     IndexNotFound,
     ReqwestFailed,
