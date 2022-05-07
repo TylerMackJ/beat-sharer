@@ -16,31 +16,25 @@ pub(in crate::api) async fn get_song_info(id: String) -> Result<SongInfo, APIErr
     let response = reqwest::get(addr).await?;
     let contents = response.text().await.map_err(|_| APIErr::InvalidText)?;
 
-    let download_url;
-    let name;
-    let author;
-
     // todo a closer look on this, not sure how the responses get formatted so I can't really
     // modify this stuff without oversight or testing
 
     // this may be able to take advantage of String::split
     // there's a lot of unwrapping on network returns
-    {
-        let dl_start = contents.find("downloadURL").ok_or(APIErr::SongNotFound)?;
-        let dl_end = contents[dl_start..contents.len() - 1].find(',').unwrap() + dl_start;
-        download_url = contents[dl_start + 15..dl_end - 1].to_string();
+    let dl_start = contents.find("downloadURL").ok_or(APIErr::SongNotFound)?;
+    let dl_end = contents[dl_start..contents.len() - 1].find(',').unwrap() + dl_start;
+    let download_url = contents[dl_start + 15..dl_end - 1].to_string();
 
-        let name_start = contents.find("songName").unwrap();
-        let name_end = contents[name_start..contents.len() - 1].find(',').unwrap() + name_start;
-        name = contents[name_start + 12..name_end - 1].to_string();
+    let name_start = contents.find("songName").unwrap();
+    let name_end = contents[name_start..contents.len() - 1].find(',').unwrap() + name_start;
+    let name = contents[name_start + 12..name_end - 1].to_string();
 
-        let author_start = contents.find("levelAuthorName").unwrap();
-        let author_end = contents[author_start..contents.len() - 1]
-            .find(',')
-            .unwrap()
-            + author_start;
-        author = contents[author_start + 19..author_end - 7].to_string();
-    }
+    let author_start = contents.find("levelAuthorName").unwrap();
+    let author_end = contents[author_start..contents.len() - 1]
+        .find(',')
+        .unwrap()
+        + author_start;
+    let author = contents[author_start + 19..author_end - 7].to_string();
 
     Ok(SongInfo {
         id,
